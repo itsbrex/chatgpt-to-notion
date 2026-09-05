@@ -3,16 +3,16 @@ import type {
   PlasmoCSUIAnchor,
   PlasmoContentScript,
   PlasmoGetInlineAnchorList,
+  PlasmoGetStyle,
   PlasmoRender
 } from "plasmo"
+import styleText from "data-text:~styles.css"
 import { createRoot } from "react-dom/client"
 import { compress } from "shrink-string"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
 import PinIcon from "~common/pin"
-
-import "~styles.css"
 
 import { useCallback, useEffect, useState } from "react"
 
@@ -25,12 +25,18 @@ export const config: PlasmoCSConfig = {
   matches: ["https://chat.openai.com/*", "https://chatgpt.com/*"]
 }
 
+export const getStyle: PlasmoGetStyle = () => {
+  const style = document.createElement("style")
+  style.textContent = styleText
+  return style
+}
+
 /**
  * Previously this was querying for the <markdown> tag.
  * The ChatGPT DOM uses a div with a "markdown" class.
  */
 export const getInlineAnchorList: PlasmoGetInlineAnchorList = async () =>
-  document.querySelectorAll(".markdown")
+  document.querySelectorAll(".agent-turn .markdown")
 
 export const render: PlasmoRender<Element> = async ({
   anchor, // the observed anchor, OR document.body.
@@ -38,12 +44,14 @@ export const render: PlasmoRender<Element> = async ({
 }) => {
   if (!anchor || !createRootContainer) return
 
-  const rootContainer = await createRootContainer(anchor)
   // Instead of multiple parentElement calls, use closest() to grab the container
   // that represents the whole assistant turn.
   const parent = anchor.element.closest(".agent-turn")
-  parent?.classList.add("pin")
-  parent?.insertBefore(rootContainer, parent.firstChild)
+  if (!parent) return
+
+  const rootContainer = await createRootContainer(anchor)
+  parent.classList.add("pin")
+  parent.insertBefore(rootContainer, parent.firstChild)
 
   const root = createRoot(rootContainer)
   rootContainer.classList.add("relative")
@@ -56,7 +64,7 @@ export const render: PlasmoRender<Element> = async ({
 }
 
 type Props = {
-  parent: Element | null
+  parent: Element
 }
 
 export const Content = ({ parent }: Props) => {

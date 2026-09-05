@@ -1,8 +1,10 @@
 import type {
   PlasmoCSConfig,
   PlasmoGetInlineAnchorList,
+  PlasmoGetStyle,
   PlasmoRender
 } from "plasmo"
+import styleText from "data-text:~styles.css"
 import { useCallback, useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { compress } from "shrink-string"
@@ -13,8 +15,6 @@ import LogoIcon from "~common/logo"
 import PinIcon from "~common/pin"
 
 // import ClaudeLogoIcon from "~common/claudeLogo"
-import "~styles.css"
-
 import { STORAGE_KEYS } from "~utils/consts"
 import { getChatConfig, i18n } from "~utils/functions"
 import type { AutosaveStatus, PopupEnum, ToBeSaved } from "~utils/types"
@@ -24,9 +24,15 @@ export const config: PlasmoCSConfig = {
   matches: ["https://claude.ai/*"]
 }
 
-// Select each Claude message container (adjust selector as needed)
+export const getStyle: PlasmoGetStyle = () => {
+  const style = document.createElement("style")
+  style.textContent = styleText
+  return style
+}
+
+// Only select Claude assistant messages containing the expected response grid.
 export const getInlineAnchorList: PlasmoGetInlineAnchorList = async () =>
-  document.querySelectorAll(".font-claude-message")
+  document.querySelectorAll('[data-perf-row="assistant"]')
 
 export const render: PlasmoRender<Element> = async ({
   anchor,
@@ -34,12 +40,20 @@ export const render: PlasmoRender<Element> = async ({
 }) => {
   if (!anchor || !createRootContainer) return
 
-  const rootContainer = await createRootContainer(anchor)
-  const root = createRoot(rootContainer)
   const parent = anchor.element
+  if (
+    !parent
+    // !parent.matches(".font-claude-response") ||
+    // !parent.querySelector(".grid")
+  )
+    return
+
+  const rootContainer = await createRootContainer(anchor)
+  parent.parentNode?.insertBefore(rootContainer, parent)
+  const root = createRoot(rootContainer)
 
   // Mark this element for pin indexing
-  parent?.classList.add("pin")
+  parent.classList.add("pin")
 
   root.render(<Content parent={parent} />)
 }
@@ -69,6 +83,7 @@ export const Content = ({ parent }: Props) => {
   const [pinIndex, setPinIndex] = useState(-1)
 
   useEffect(() => {
+    console.log(parent)
     setPinIndex(getPinIndex(parent))
   }, [parent])
 
@@ -116,7 +131,7 @@ export const Content = ({ parent }: Props) => {
       return
     }
 
-    const container = parent.parentElement
+    const container = parent
     console.log({ parent, container })
 
     // For Claude, assume message text is in <p> elements
@@ -130,7 +145,7 @@ export const Content = ({ parent }: Props) => {
 
     // Assume prompt text is in a <p> within the previous sibling container
     const promptElement =
-      container?.parentElement?.parentElement?.previousElementSibling?.querySelector(
+      container?.previousElementSibling?.previousElementSibling?.querySelector(
         "p.whitespace-pre-wrap"
       )
     const prompt = promptElement
@@ -172,7 +187,8 @@ export const Content = ({ parent }: Props) => {
     )
 
   return (
-    <div style={{ position: "relative", width: "100%", height: 33 }}>
+    // <div style={{ position: "relative", width: "100%", height: 33 }}>
+    <div className="flex items-center gap-2 px-2 py-1 absolute top-10 -left-10">
       <button
         onClick={handleClick}
         className="text-gray-800 dark:text-gray-100 flex items-center ml-2 mt-1"

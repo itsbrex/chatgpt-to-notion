@@ -1,17 +1,16 @@
 import type {
   PlasmoCSConfig,
   PlasmoGetInlineAnchorList,
+  PlasmoGetStyle,
   PlasmoRender
 } from "plasmo"
+import styleText from "data-text:~styles.css"
 import { createRoot } from "react-dom/client"
 import { compress } from "shrink-string"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
 import PinIcon from "~common/pin"
-
-import "~styles.css"
-
 import { useCallback, useEffect, useState } from "react"
 
 import LogoIcon from "~common/logo"
@@ -23,32 +22,41 @@ export const config: PlasmoCSConfig = {
   matches: ["https://chat.mistral.ai/*"]
 }
 
+export const getStyle: PlasmoGetStyle = () => {
+  const style = document.createElement("style")
+  style.textContent = styleText
+  return style
+}
+
 // Target the flex container that holds the Mistral logo and message content
 // @ts-ignore
-export const getInlineAnchorList: PlasmoGetInlineAnchorList = async () => {
-  const messageContainers = document.querySelectorAll(
-    ".group.flex.w-full.gap-3 .flex.min-w-0.flex-1.flex-col"
+export const getInlineAnchorList: PlasmoGetInlineAnchorList = async () =>
+  document.querySelectorAll(
+    '[data-message-author-role="assistant"]'
   )
-
-  return Array.from(messageContainers).filter((container) =>
-    container.parentElement?.querySelector('svg[class*="fill-brand-orange"]')
-  )
-}
 
 export const render: PlasmoRender<Element> = async ({
   anchor,
   createRootContainer
 }) => {
   if (!anchor || !createRootContainer) return
-  const rootContainer = await createRootContainer(anchor)
+
   const anchorElement = anchor.element
+  const parent = anchorElement.parentElement
+  if (
+    !parent
+    // !parent.querySelector('svg[class*="fill-brand-orange"]') ||
+    // !anchorElement.querySelector(".prose.select-text")
+  )
+    return
+
+  const rootContainer = await createRootContainer(anchor)
   // Insert the root container as the first child of the flex container
   anchorElement.insertBefore(rootContainer, anchorElement.firstChild)
   const root = createRoot(rootContainer)
-  const parent = anchorElement.parentElement
-  parent?.classList.add("pin")
-  parent?.classList.add("relative")
-  root.render(<Content parent={parent!} />)
+  parent.classList.add("pin")
+  parent.classList.add("relative")
+  root.render(<Content parent={parent} />)
 }
 
 export const Content = ({ parent }: Props) => {
@@ -74,6 +82,7 @@ export const Content = ({ parent }: Props) => {
   const [pinIndex, setPinIndex] = useState(-1)
 
   useEffect(() => {
+    console.log(parent)
     const index = getPinIndex(parent)
     setPinIndex(index)
   }, [])

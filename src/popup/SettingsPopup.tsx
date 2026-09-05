@@ -7,8 +7,6 @@ import useDebounce from "~hooks/useDebounce"
 import { formatDB, getDBTagsProperties, getIcon } from "~utils/functions/notion"
 import type { PopupEnum, StoredDatabase } from "~utils/types"
 
-import "~styles.css"
-
 import { sendToBackground } from "@plasmohq/messaging"
 
 import Spinner from "~common/components/Spinner"

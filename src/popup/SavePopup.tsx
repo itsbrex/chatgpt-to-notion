@@ -14,8 +14,6 @@ import type {
   ToBeSaved
 } from "~utils/types"
 
-import "~styles.css"
-
 import { sendToBackground } from "@plasmohq/messaging"
 
 import { checkSaveConflict } from "~api/checkSaveConflict"

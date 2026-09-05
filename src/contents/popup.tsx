@@ -56,7 +56,7 @@ const Wrapper = () => {
   if (popup == "save" || popup == "error" || saveStatus == "error")
     return (
       <div
-        className="z-20 fixed top-0 left-0 w-full h-full"
+        className="font-sans z-20 fixed top-0 left-0 w-full h-full"
         onPointerDown={hidePopup}>
         <div
           className="absolute top-3 right-3 rounded bg-white text-black shadow-lg"
@@ -76,7 +76,7 @@ const Wrapper = () => {
   if (saveStatus)
     return (
       <div
-        className={`z-20 fixed top-0 left-0 w-full h-full ${
+        className={`font-sans z-20 fixed top-0 left-0 w-full h-full ${
           saveStatus === "saved" ? "" : "pointer-events-none"
         }`}
         onPointerDown={saveStatus === "saved" ? hidePopup : undefined}>

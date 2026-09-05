@@ -3,18 +3,16 @@ import type {
   PlasmoCSUIAnchor,
   PlasmoContentScript,
   PlasmoGetInlineAnchorList,
+  PlasmoGetStyle,
   PlasmoRender
 } from "plasmo"
+import styleText from "data-text:~styles.css"
 import { createRoot } from "react-dom/client"
 import { compress } from "shrink-string"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
 import PinIcon from "~common/pin"
-
-import "~styles.css"
-
-import { cp } from "fs"
 import { useCallback, useEffect, useState } from "react"
 
 import LogoIcon from "~common/logo"
@@ -26,35 +24,32 @@ export const config: PlasmoCSConfig = {
   matches: ["https://chat.deepseek.com/*"]
 }
 
+export const getStyle: PlasmoGetStyle = () => {
+  const style = document.createElement("style")
+  style.textContent = styleText
+  return style
+}
+
 export const getInlineAnchorList: PlasmoGetInlineAnchorList = async () =>
-  document.querySelectorAll("div > .eb23581b")
+  document.querySelectorAll(".ds-assistant-message-main-content")
 
 export const render: PlasmoRender<Element> = async ({
   anchor, // the observed anchor, OR document.body.
   createRootContainer // This creates the default root container
 }) => {
   if (!anchor || !createRootContainer) return
-  // const parentElement = anchor?.element.parentElement?.parentElement
-  // if (!parentElement) return
-  // const parentAnchor = {
-  //   element: parentElement,
-  //   type: anchor.type
-  // }
 
-  // console.log({ anchor, parentAnchor })
+  const parent = anchor.element.parentElement?.parentElement
+  if (!parent) return
+
   const rootContainer = await createRootContainer(anchor)
-
+  const rootNode = rootContainer.getRootNode()
+  if (rootNode instanceof ShadowRoot) {
+    parent.parentNode?.insertBefore(rootNode.host, parent)
+  }
   const root = createRoot(rootContainer) // Any root
-  const parent = anchor?.element
-  parent?.classList.add("pin")
-  root.render(
-    <>
-      <Content
-        // @ts-ignore
-        parent={parent}
-      />
-    </>
-  )
+  parent.classList.add("pin")
+  root.render(<Content parent={parent} />)
 }
 
 export const Content = ({ parent }: Props) => {
@@ -134,10 +129,10 @@ export const Content = ({ parent }: Props) => {
     }
 
     const images = Array.from(parent.querySelectorAll("img") || [])
-    const container = parent.parentElement
+    const container = parent
 
     // Get all markdown content elements within the container
-    const text = Array.from(container!.querySelectorAll(".ds-markdown")).map(
+    const text = Array.from(container!.querySelectorAll("ds-assistant-message-main-content")).map(
       (el) =>
         el.parentElement?.classList.contains("mt-3")
           ? "%%CHATGPT_TO_NOTION_WORK1%%" + el.innerHTML
@@ -165,11 +160,11 @@ export const Content = ({ parent }: Props) => {
         : uncompressedAnswer
     const answer = await compress(preCompressionAnswer)
 
-    console.log(parent.parentElement)
+    console.log(parent)
 
     const prompt = await compress(
       // @ts-ignore
-      parent.parentElement.previousElementSibling.querySelector(".fbb737a4")
+      parent.previousElementSibling.previousElementSibling.querySelector(".ds-message")
         .textContent
     )
     const title = document.title
@@ -190,48 +185,39 @@ export const Content = ({ parent }: Props) => {
 
   if (autosaveEnabled)
     return (
+    <div className="flex items-center gap-2 px-2 py-1 absolute top-0 -left-16">
       <button
-        className="pin"
-        onClick={
-          isLastMessage && status === "error"
-            ? () => setShowPopup("error")
-            : status === "saved"
-            ? handleClick
-            : undefined
-        }
+        onClick={handleClick}
+        className="text-gray-800 dark:text-gray-100 flex items-center ml-2 mt-1"
         style={{
-          display: "flex",
-          justifyContent: "center",
           background: "transparent",
           border: "none",
           marginTop: 10,
-          width: "100%",
-          position: "absolute",
-          top: 40,
-          left: 0,
-          cursor: status !== "generating" ? "pointer" : "default"
+          padding: 4,
+          borderRadius: 4,
+          cursor: "pointer"
         }}>
-        {isLastMessage ? <LastMessageIcon /> : <LogoIcon />}
+        <PinIcon />
       </button>
+    </div>
     )
 
   return (
-    <button
-      onClick={handleClick}
-      className="text-gray-800 dark:text-gray-100 pin"
-      style={{
-        background: "transparent",
-        border: "none",
-        marginTop: 10,
-        padding: 4,
-        borderRadius: 4,
-        position: "absolute",
-        top: 32,
-        left: -42,
-        cursor: "pointer"
-      }}>
-      <PinIcon />
-    </button>
+    <div className="flex items-center gap-2 px-2 py-1 absolute top-0 -left-16">
+      <button
+        onClick={handleClick}
+        className="text-gray-800 dark:text-gray-100 flex items-center ml-2 mt-1"
+        style={{
+          background: "transparent",
+          border: "none",
+          marginTop: 10,
+          padding: 4,
+          borderRadius: 4,
+          cursor: "pointer"
+        }}>
+        <PinIcon />
+      </button>
+    </div>
   )
 }
 
