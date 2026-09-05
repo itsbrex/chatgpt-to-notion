@@ -132,7 +132,7 @@ export const Content = ({ parent }: Props) => {
     const container = parent
 
     // Get all markdown content elements within the container
-    const text = Array.from(container!.querySelectorAll("ds-assistant-message-main-content")).map(
+    const text = Array.from(container!.querySelectorAll(".ds-assistant-message-main-content")).map(
       (el) =>
         el.parentElement?.classList.contains("mt-3")
           ? "%%CHATGPT_TO_NOTION_WORK1%%" + el.innerHTML
