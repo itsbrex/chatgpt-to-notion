@@ -16,18 +16,21 @@ export type DeepseekConversation = {
         updated_at: number
       }
       chat_messages: DeepseekMessage[]
-      cache_valid: boolean
-      route_id: null | string
+      cache_valid?: boolean
+      route_id?: null | string
+      cache_control?: string
+      cache_reset_at?: number
     }
   }
 }
 
 export type DeepseekMessage = {
   message_id: number
-  parent_id: number
+  parent_id: number | null
   model: string
   role: "USER" | "ASSISTANT"
-  content: string
+  content?: string
+  fragments?: DeepseekFragment[]
   thinking_enabled: boolean
   thinking_content: null | string
   thinking_elapsed_secs: null | number
@@ -42,4 +45,32 @@ export type DeepseekMessage = {
   search_results: null
   tip: null
   feedback: null
+}
+
+type DeepseekFragment =
+  | {
+      id: number
+      type: "REQUEST" | "RESPONSE"
+      content: string | null
+      references?: DeepseekSearchResult[]
+      stage_id?: number
+    }
+  | {
+      id: number
+      type: "SEARCH"
+      content: null
+      results: DeepseekSearchResult[]
+      queries: { query: string }[]
+      status: string
+      stage_id?: number
+    }
+
+type DeepseekSearchResult = {
+  cite_index: number
+  site_name: string
+  title: string
+  url: string
+  snippet?: string
+  site_icon?: string
+  published_at?: number | null
 }

@@ -22,7 +22,7 @@ export type MistralMessage = {
   id: string
   role: "user" | "assistant"
   content: string
-  contentChunks: any
+  contentChunks: MistralContentChunk[] | null
   version: number
   status: string
   reaction: string
@@ -31,7 +31,7 @@ export type MistralMessage = {
   chatId: string
   model: any
   moderationCategory: string
-  references: any
+  references: MistralReference[] | null
   turn: number
   parentId: string
   parentVersion: number
@@ -42,4 +42,32 @@ export type MistralMessage = {
   toolCalls: number
   isAcceleratedAnswer: boolean
   files: any[]
+}
+
+type MistralContentChunk =
+  | {
+      type: "text"
+      text: string
+    }
+  | {
+      type: "reference"
+      referenceIds: string[]
+    }
+  | {
+      type: "tool_call"
+      publicResult?: Record<string, MistralReference>
+      [key: string]: any
+    }
+
+export type MistralReference = {
+  id: string
+  url: string
+  title: string
+  source: string
+  can_open?: boolean
+  date?: string
+  rank?: number
+  metadata?: Record<string, any>
+  snippets?: string[]
+  description?: string | null
 }

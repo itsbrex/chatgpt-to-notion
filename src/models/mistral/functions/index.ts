@@ -1,3 +1,4 @@
+import type { MistralReference } from "~models/mistral/types"
 import type { Conversation, ConversationTextdocs, Message } from "~utils/types"
 
 function parseMultipleJSON(raw: string): any[] {
@@ -102,11 +103,12 @@ export const parseConversation = (rawConv: Conversation["mistral"]) => {
       }
       lastRole = "user"
     } else if (msg.role === "assistant") {
+      const answer = flattenMistralMessage(msg)
       // Merge consecutive assistant messages if needed.
       if (lastRole === "assistant") {
-        currentAnswer += "\n\n" + msg.content
+        currentAnswer += "\n\n" + answer
       } else {
-        currentAnswer = msg.content
+        currentAnswer = answer
       }
       lastRole = "assistant"
     }
@@ -130,9 +132,45 @@ export const parseConversation = (rawConv: Conversation["mistral"]) => {
   return { url, title, prompts, answers, textDocs: [] }
 }
 
-/**
- * In Mistral the messages are flat so this helper simply returns the content.
- */
+/** Rebuilds the message from its ordered text and reference chunks. */
 export const flattenMistralMessage = (msg: Message["mistral"]): string => {
-  return msg.content
+  if (!msg.contentChunks?.some((chunk) => chunk.type === "reference")) {
+    return msg.content
+  }
+
+  const references = new Map(
+    (msg.references ?? []).map((reference) => [reference.id, reference])
+  )
+
+  for (const chunk of msg.contentChunks) {
+    if (chunk.type !== "tool_call" || !chunk.publicResult) continue
+
+    for (const [id, reference] of Object.entries(chunk.publicResult)) {
+      if (!references.has(id)) references.set(id, reference)
+    }
+  }
+
+  return msg.contentChunks
+    .map((chunk) => {
+      if (chunk.type === "text") return chunk.text
+      if (chunk.type !== "reference") return ""
+
+      return chunk.referenceIds
+        .map((id) => formatReference(references.get(id)))
+        .filter((reference): reference is string => reference !== null)
+        .join(" ")
+    })
+    .join("")
+}
+
+const formatReference = (reference?: MistralReference) => {
+  if (!reference) return null
+
+  if (/^https?:\/\//i.test(reference.url)) {
+    const label = reference.source || reference.title || reference.url
+    return `[${label}](${reference.url})`
+  }
+
+  const label = reference.title || reference.source || reference.url
+  return label ? `[${label}]` : null
 }

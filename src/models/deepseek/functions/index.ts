@@ -4,57 +4,80 @@ export const parseConversation = (rawConv: Conversation["deepseek"]) => {
   const { chat_session, chat_messages } = rawConv.data.biz_data
   const id = chat_session.id
   const title = chat_session.title
-  // Sort messages chronologically.
+  // DeepSeek can give an assistant message an inserted_at value that is a few
+  // milliseconds earlier than its prompt. message_id preserves the real order.
   const messages = [...chat_messages].sort(
-    (a, b) => a.inserted_at - b.inserted_at
+    (a, b) => a.message_id - b.message_id || a.inserted_at - b.inserted_at
   )
 
   // Group consecutive user messages and their following assistant messages.
   const pairs: {
-    prompt: Message["deepseek"]
-    answers: Message["deepseek"][]
+    prompt: string
+    answers: string[]
   }[] = []
-  let currentPrompt: Message["deepseek"] | null = null
-  let currentAnswers: Message["deepseek"][] = []
+  let currentPrompt: string | null = null
+  let currentAnswers: string[] = []
   let lastRole: "USER" | "ASSISTANT" | null = null
 
   messages.forEach((msg) => {
+    const content = flattenMessage(msg)
+
     if (msg.role === "USER") {
-      if (lastRole === "USER" && currentPrompt) {
+      if (lastRole === "USER" && currentPrompt !== null) {
         // Merge consecutive user messages.
-        currentPrompt.content += "\n" + msg.content
+        currentPrompt += "\n" + content
       } else {
-        if (currentPrompt) {
+        if (currentPrompt !== null) {
           pairs.push({ prompt: currentPrompt, answers: currentAnswers })
         }
         // Start a new prompt.
-        currentPrompt = { ...msg }
+        currentPrompt = content
         currentAnswers = []
       }
       lastRole = "USER"
     } else if (msg.role === "ASSISTANT") {
       if (lastRole === "ASSISTANT" && currentAnswers.length) {
         // Merge consecutive assistant messages.
-        currentAnswers[currentAnswers.length - 1].content += "\n" + msg.content
+        currentAnswers[currentAnswers.length - 1] += "\n" + content
       } else {
-        currentAnswers.push({ ...msg })
+        currentAnswers.push(content)
       }
       lastRole = "ASSISTANT"
     }
   })
-  if (currentPrompt)
+  if (currentPrompt !== null)
     pairs.push({ prompt: currentPrompt, answers: currentAnswers })
 
-  const prompts = pairs.map((pair) => pair.prompt.content)
-  const answers = pairs.map((pair) =>
-    pair.answers.map(flattenMessage).join("\n\n")
-  )
+  const prompts = pairs.map((pair) => pair.prompt)
+  const answers = pairs.map((pair) => pair.answers.join("\n\n"))
   const url = "https://chat.deepseek.com/a/chat/s/" + id
 
   return { url, title, prompts, answers, textDocs: [] }
 }
 
 export const flattenMessage = (msg: Message["deepseek"]): string => {
-  // For deepseek, the message content is plain text.
-  return msg.content
+  const text =
+    msg.fragments
+      ?.filter(
+        (fragment) =>
+          fragment.type === "REQUEST" || fragment.type === "RESPONSE"
+      )
+      .map((fragment) => fragment.content)
+      .filter((content): content is string => typeof content === "string")
+      .join("\n") ?? msg.content ?? ""
+
+  const references = new Map(
+    msg.fragments
+      ?.filter((fragment) => fragment.type === "SEARCH")
+      .flatMap((fragment) => fragment.results)
+      .map((reference) => [reference.cite_index, reference]) ?? []
+  )
+
+  return text.replace(/\[citation:(\d+)\]/g, (marker, rawIndex) => {
+    const reference = references.get(Number(rawIndex))
+    if (!reference?.url) return marker
+
+    const label = reference.site_name || reference.title || reference.url
+    return ` ([${label}](${reference.url}))`
+  })
 }

@@ -38,9 +38,11 @@ export const parseConversation = (rawConv: Conversation["claude"]) => {
 
 const extractMessageText = (msg: Message["claude"]): string => {
   let text = msg.content
-    .map((c) => c.text)
+    .map((content) => insertCitations(content))
     .join("\n")
-    .trim()
+
+  text = text.trim()
+
   const artifacts: string[] = []
   const artifactRegex = /<antArtifact\s+([^>]+)>([\s\S]*?)<\/antArtifact>/gi
 
@@ -50,6 +52,34 @@ const extractMessageText = (msg: Message["claude"]): string => {
     if (langMatch) language = langMatch[1]
     return `%%CHATGPT_TO_NOTION_WORK2%%\n\`\`\`${language}\n${content.trim()}\n\`\`\``
   })
+
+  return text
+}
+
+const insertCitations = (content: Message["claude"]["content"][0]) => {
+  let { text, citations } = content
+  if (!citations || citations.length === 0) return text
+
+  const sortedCitations = citations.sort(
+    (a, b) => b.start_index - a.start_index
+  )
+
+  for (const { start_index, end_index, url, metadata } of sortedCitations) {
+    if (
+      start_index < 0 ||
+      end_index < start_index ||
+      end_index > text.length ||
+      !url
+    )
+      continue
+
+    const label = metadata?.site_name || text.slice(start_index, end_index)
+    const text_index = metadata?.site_name ? end_index : start_index
+    text =
+      text.slice(0, text_index) +
+      ` ([${label}](${url}))` +
+      text.slice(end_index)
+  }
 
   return text
 }

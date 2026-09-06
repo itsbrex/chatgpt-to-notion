@@ -34,7 +34,7 @@ type Content = {
   stop_timestamp: string
   type: "text"
   text: string
-  citations: any[]
+  citations: Citation[]
 }
 
 type Attachment = {
@@ -89,5 +89,14 @@ type FileV2 = {
     primary_color: string
     image_width: number
     image_height: number
+  }
+}
+
+type Citation = {
+  start_index: number
+  end_index: number
+  url: string
+  metadata?: {
+    site_name?: string
   }
 }

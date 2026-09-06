@@ -51,9 +51,9 @@ export const parseConversation = (
       (item.message!.content.parts?.join("\n") as string)
   )
   const answers = rawPrompts.map((item) => {
-    const answer = []
-    flattenMessage(item, mapping, answer, textDocs)
-    return answer.join("\n\n")
+    const answerArr = []
+    flattenMessage(item, mapping, answerArr, textDocs)
+    return answerArr.join("\n\n")
   })
 
   const url = "https://chatgpt.com/c/" + id
@@ -93,6 +93,11 @@ export const flattenMessage = (
           message.content.text ??
           message.content.parts?.join("\n") ??
           "[missing text]"
+
+        text = replaceContentReferences(
+          text,
+          message.metadata.content_references ?? []
+        )
 
         if (
           message.recipient == "canmore.create_textdoc" ||
@@ -138,6 +143,22 @@ export const flattenMessage = (
       flattenMessage(child, mapping, flattenedMessage, textDocs)
     })
   }
+}
+
+type ContentReference = {
+  matched_text?: string
+  alt?: string
+}
+
+const replaceContentReferences = (
+  text: string,
+  references: ContentReference[]
+) => {
+  for (const { matched_text, alt } of references) {
+    if (!matched_text || !alt) continue
+    text = text.split(matched_text).join(alt)
+  }
+  return text
 }
 
 const getTextdocType = (type: string) => {
