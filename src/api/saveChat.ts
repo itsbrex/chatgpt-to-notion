@@ -60,7 +60,7 @@ export const saveChat = async (
         icon: {
           type: "external",
           external: {
-            url: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg"
+            url: modelFaviconMap[model]
           }
         },
         properties: tag
@@ -140,4 +140,11 @@ const table_of_contents = {
       }
     ]
   }
+}
+
+const modelFaviconMap: Record<SupportedModels, string> = {
+  chatgpt: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+  deepseek: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/DeepSeek-icon.svg/langfr-250px-DeepSeek-icon.svg.png",
+  mistral: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Mistral_AI_logo_%282025%E2%80%93%29.svg/langfr-330px-Mistral_AI_logo_%282025%E2%80%93%29.svg.png",
+  claude: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Claude_AI_symbol.svg/1280px-Claude_AI_symbol.svg.png"
 }
