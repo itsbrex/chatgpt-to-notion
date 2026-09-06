@@ -5,7 +5,7 @@ import { getConversationTextdocs } from "~api/getConversationTextdocs"
 import { parseSave } from "~api/parseSave"
 import { saveChat } from "~api/saveChat"
 import { STORAGE_KEYS } from "~utils/consts"
-import { convertHeaders } from "~utils/functions"
+import { convertHeaders, getErrorMessage } from "~utils/functions"
 import { parseConversation } from "~utils/functions/llms"
 import type {
   SaveBehavior,
@@ -144,7 +144,7 @@ const save = async (
     await storage.set(STORAGE_KEYS.saveStatus, "error" as SaveStatus)
     await storage.set(STORAGE_KEYS.error, {
       ...err,
-      message: err.message ?? JSON.parse(err.body ?? "{}").message
+      message: getErrorMessage(err)
     })
     throw err
   }

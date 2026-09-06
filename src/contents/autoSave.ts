@@ -6,7 +6,11 @@ import { Storage } from "@plasmohq/storage"
 
 import { parseSave } from "~api/parseSave"
 import { STORAGE_KEYS } from "~utils/consts"
-import { getChatConfig, updateChatConfig } from "~utils/functions"
+import {
+  getChatConfig,
+  getErrorMessage,
+  updateChatConfig
+} from "~utils/functions"
 import type { AutosaveStatus, ChatConfig } from "~utils/types"
 
 import { fetchFullChat } from "./fetchFullPage"
@@ -78,7 +82,7 @@ storage.watch({
         updateChatConfig(chatID, {
           lastSaveStatus: "error",
           lastError: {
-            message: err.message ?? JSON.parse(err.body ?? "").message ?? null,
+            message: getErrorMessage(err),
             code: err.code ?? err.status ?? null
           }
         })

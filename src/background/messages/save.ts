@@ -3,6 +3,7 @@ import { Storage } from "@plasmohq/storage"
 
 import { save } from "~background/functions"
 import { STORAGE_KEYS } from "~utils/consts"
+import { serializeError } from "~utils/functions"
 import type { ModelHeaders, SupportedModels } from "~utils/types"
 
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
@@ -35,7 +36,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
     res.send(saveRes)
   } catch (err) {
     console.error(err)
-    res.send({ err })
+    res.send({ err: serializeError(err) })
   }
 }
 

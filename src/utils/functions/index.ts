@@ -169,6 +169,46 @@ export const getConsiseErrMessage = (error: Error) => {
   }
 }
 
+export const getErrorMessage = (error: unknown): string | null => {
+  if (typeof error === "string") return error
+  if (!error || typeof error !== "object") return null
+
+  const { message, body } = error as {
+    message?: unknown
+    body?: unknown
+  }
+
+  if (typeof message === "string" && message.length > 0) return message
+
+  if (body && typeof body === "object") {
+    const bodyMessage = (body as { message?: unknown }).message
+    if (typeof bodyMessage === "string" && bodyMessage.length > 0)
+      return bodyMessage
+  }
+
+  if (typeof body !== "string" || body.length === 0) return null
+
+  try {
+    const parsedBody = JSON.parse(body)
+    if (
+      parsedBody &&
+      typeof parsedBody === "object" &&
+      typeof parsedBody.message === "string"
+    ) {
+      return parsedBody.message
+    }
+  } catch {
+    // Some APIs return a plain-text or incomplete body instead of JSON.
+  }
+
+  return body
+}
+
+export const serializeError = (error: unknown) => ({
+  ...(error && typeof error === "object" ? error : {}),
+  message: getErrorMessage(error)
+})
+
 export const convertHeaders = (raw: { name: string; value?: string }[]) => {
   return raw.reduce(
     (acc, header) => ({ ...acc, [header.name]: header.value }),

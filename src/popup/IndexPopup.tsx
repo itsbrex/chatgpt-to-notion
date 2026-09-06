@@ -36,6 +36,7 @@ import { STORAGE_KEYS } from "~utils/consts"
 import {
   getChatConfig,
   getConsiseErrMessage,
+  getErrorMessage,
   i18n,
   updateChatConfig
 } from "~utils/functions"
@@ -179,7 +180,7 @@ function IndexPopup() {
       if (res.err) {
         setError({
           ...res.err,
-          message: res.err.message ?? JSON.parse(res.err.body ?? "").message
+          message: getErrorMessage(res.err)
         })
         return
       }
@@ -203,7 +204,7 @@ function IndexPopup() {
     } catch (err) {
       setError({
         ...err,
-        message: err.message ?? JSON.parse(err.body ?? "").message
+        message: getErrorMessage(err)
       })
     } finally {
       setConflictingPageId(undefined)
