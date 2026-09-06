@@ -19,7 +19,7 @@ function WrongPagePopup() {
         <a href="https://chatgpt.com" target="_blank" className="link">
           ChatGPT
         </a>
-        <a href="https://claide.ai" target="_blank" className="link">
+        <a href="https://claude.ai" target="_blank" className="link">
           Claude
         </a>
         <a href="https://chat.deepseek.com" target="_blank" className="link">
